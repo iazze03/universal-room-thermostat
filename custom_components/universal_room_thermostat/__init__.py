@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import inspect
 import logging
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components import frontend
+from homeassistant.components import panel_custom
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, discovery
@@ -173,91 +175,38 @@ def _cooling_request_entity_id(room_key: str) -> str:
     return f"binary_sensor.urt_{room_key}_cooling_request"
 
 
-def _dashboard_config(
+def _panel_config(
     rooms: dict[str, RoomConfig],
     global_config: dict[str, Any],
+    sidebar_config: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build the Lovelace dashboard shown in the sidebar."""
-    climate_cards = [
-        {
-            "type": "tile",
-            "entity": _climate_entity_id(room_key),
-            "name": room.name,
-            "features": [
-                {"type": "target-temperature"},
-                {"type": "climate-hvac-modes"},
-                {"type": "climate-preset-modes"},
-            ],
-        }
-        for room_key, room in rooms.items()
-    ]
-    cooling_request_entities = [
-        {
-            "entity": _cooling_request_entity_id(room_key),
-            "name": room.name,
-        }
-        for room_key, room in rooms.items()
-        if room.cooling_type == "ducted"
-    ]
-    diagnostics_entities: list[dict[str, str]] = [
-        {"entity": "binary_sensor.urt_ducted_cooling_requested", "name": "Richiesta freddo"},
-        {"entity": "sensor.urt_ducted_active_room", "name": "Stanza guida"},
-        {"entity": "sensor.urt_ducted_max_delta", "name": "Delta massimo"},
-        {"entity": "sensor.urt_ducted_requested_setpoint", "name": "Setpoint Daikin"},
-    ]
+    """Build the config passed to the URT custom panel."""
     return {
-        "title": "Clima Casa",
-        "views": [
+        "title": sidebar_config["title"],
+        "mode_entity": global_config["mode_entity"],
+        "rooms": [
             {
-                "title": "Clima",
-                "path": "clima",
-                "icon": "mdi:thermostat",
-                "type": "sections",
-                "max_columns": 3,
-                "sections": [
-                    {
-                        "type": "grid",
-                        "title": "Modalità casa",
-                        "cards": [
-                            {
-                                "type": "entities",
-                                "entities": [
-                                    {
-                                        "entity": global_config["mode_entity"],
-                                        "name": "Modalità clima casa",
-                                    }
-                                ],
-                            }
-                        ],
-                    },
-                    {
-                        "type": "grid",
-                        "title": "Termostati virtuali",
-                        "cards": climate_cards,
-                    },
-                    {
-                        "type": "grid",
-                        "title": "Canalizzato",
-                        "cards": [
-                            {
-                                "type": "entities",
-                                "entities": diagnostics_entities,
-                            }
-                        ],
-                    },
-                    {
-                        "type": "grid",
-                        "title": "Richieste freddo camere",
-                        "cards": [
-                            {
-                                "type": "entities",
-                                "entities": cooling_request_entities,
-                            }
-                        ],
-                    },
-                ],
+                "key": room_key,
+                "name": room.name,
+                "climate_entity": _climate_entity_id(room_key),
+                "temperature_sensor": room.temperature_sensor,
+                "humidity_sensor": room.humidity_sensor,
+                "presence_entity": room.presence_entity or room.occupancy_entity,
+                "cooling_type": room.cooling_type,
+                "cooling_request_entity": (
+                    _cooling_request_entity_id(room_key)
+                    if room.cooling_type == "ducted"
+                    else None
+                ),
             }
+            for room_key, room in rooms.items()
         ],
+        "diagnostics": {
+            "cooling_requested": "binary_sensor.urt_ducted_cooling_requested",
+            "active_room": "sensor.urt_ducted_active_room",
+            "max_delta": "sensor.urt_ducted_max_delta",
+            "requested_setpoint": "sensor.urt_ducted_requested_setpoint",
+        },
     }
 
 
@@ -266,99 +215,83 @@ async def _maybe_await(result: Any) -> None:
         await result
 
 
-async def _async_setup_sidebar_dashboard(
+async def _async_remove_legacy_lovelace_dashboard(
+    hass: HomeAssistant,
+    url_path: str,
+) -> None:
+    """Remove the old Lovelace dashboard created by URT 1.0.1/1.0.2."""
+    dashboards_store = Store(hass, 1, "lovelace_dashboards")
+    dashboards_data = await dashboards_store.async_load()
+    if not dashboards_data:
+        return
+    items = dashboards_data.get("items")
+    if not isinstance(items, list):
+        return
+    filtered_items = [item for item in items if item.get("url_path") != url_path]
+    if len(filtered_items) == len(items):
+        return
+    dashboards_data["items"] = filtered_items
+    await dashboards_store.async_save(dashboards_data)
+
+
+async def _async_setup_sidebar_panel(
     hass: HomeAssistant,
     rooms: dict[str, RoomConfig],
     global_config: dict[str, Any],
-    dashboard_config: dict[str, Any],
+    sidebar_config: dict[str, Any],
 ) -> None:
-    """Create/update a Lovelace dashboard and register it in the sidebar."""
-    if not dashboard_config["enabled"]:
+    """Register the URT custom panel in the Home Assistant sidebar."""
+    if not sidebar_config["enabled"]:
         return
 
-    title = dashboard_config["title"]
-    icon = dashboard_config["icon"]
-    url_path = dashboard_config["url_path"].strip("/")
-    show_in_sidebar = dashboard_config["show_in_sidebar"]
-    require_admin = dashboard_config["require_admin"]
-    dashboard_id = url_path
-
-    dashboards_store = Store(hass, 1, "lovelace_dashboards")
-    dashboards_data = await dashboards_store.async_load() or {"items": []}
-    items = dashboards_data.setdefault("items", [])
-    dashboard_item = next(
-        (item for item in items if item.get("url_path") == url_path),
-        None,
-    )
-    if dashboard_item is None:
-        items.append(
-            {
-                "id": dashboard_id,
-                "url_path": url_path,
-                "title": title,
-                "icon": icon,
-                "show_in_sidebar": show_in_sidebar,
-                "require_admin": require_admin,
-                "mode": "storage",
-            }
-        )
-    else:
-        dashboard_item.update(
-            {
-                "title": title,
-                "icon": icon,
-                "show_in_sidebar": show_in_sidebar,
-                "require_admin": require_admin,
-                "mode": "storage",
-            }
-        )
-        dashboard_id = dashboard_item.get("id", dashboard_id)
-    await dashboards_store.async_save(dashboards_data)
-
-    config_store = Store(hass, 1, f"lovelace.{dashboard_id}")
-    await config_store.async_save(
-        {"config": _dashboard_config(rooms, global_config)}
-    )
-
+    title = sidebar_config["title"]
+    icon = sidebar_config["icon"]
+    url_path = sidebar_config["url_path"].strip("/")
+    show_in_sidebar = sidebar_config["show_in_sidebar"]
+    require_admin = sidebar_config["require_admin"]
     if not show_in_sidebar:
         return
 
-    if hasattr(frontend, "async_remove_panel"):
-        try:
-            await _maybe_await(frontend.async_remove_panel(hass, url_path))
-        except ValueError:
-            pass
+    await _async_remove_legacy_lovelace_dashboard(hass, url_path)
+
+    panel_dir = Path(__file__).parent / "frontend"
+    panel_url = f"/{DOMAIN}/urt-panel.js"
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(
+                panel_url,
+                str(panel_dir / "urt-panel.js"),
+                cache_headers=False,
+            )
+        ]
+    )
 
     try:
         await _maybe_await(
-            frontend.async_register_built_in_panel(
+            panel_custom.async_register_panel(
                 hass,
-                "lovelace",
+                frontend_url_path=url_path,
+                webcomponent_name="urt-climate-panel",
                 sidebar_title=title,
                 sidebar_icon=icon,
-                sidebar_default_visible=True,
-                frontend_url_path=url_path,
-                config={
-                    "mode": "storage",
-                },
+                module_url=panel_url,
+                config=_panel_config(rooms, global_config, sidebar_config),
                 require_admin=require_admin,
                 update=True,
                 show_in_sidebar=show_in_sidebar,
             )
         )
     except TypeError:
-        # Older Home Assistant versions do not accept all keyword arguments.
+        # Older Home Assistant versions do not accept update/show_in_sidebar.
         await _maybe_await(
-            frontend.async_register_built_in_panel(
+            panel_custom.async_register_panel(
                 hass,
-                "lovelace",
+                frontend_url_path=url_path,
+                webcomponent_name="urt-climate-panel",
                 sidebar_title=title,
                 sidebar_icon=icon,
-                sidebar_default_visible=True,
-                frontend_url_path=url_path,
-                config={
-                    "mode": "storage",
-                },
+                module_url=panel_url,
+                config=_panel_config(rooms, global_config, sidebar_config),
                 require_admin=require_admin,
             )
         )
@@ -392,7 +325,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     )
     hass.data[DOMAIN] = coordinator
     await coordinator.async_start()
-    await _async_setup_sidebar_dashboard(
+    await _async_setup_sidebar_panel(
         hass,
         rooms,
         domain_config[CONF_GLOBAL],

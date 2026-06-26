@@ -111,18 +111,21 @@ universal_room_thermostat:
       heat_climate: climate.valvola_bagnetto
 ```
 
-## Dashboard sidebar
+## Pagina sidebar
 
-Quando Home Assistant carica l'integrazione, URT crea o aggiorna
-automaticamente una dashboard Lovelace chiamata **Clima Casa** e la registra
-nella sidebar. La pagina contiene:
+Quando Home Assistant carica l'integrazione, URT registra automaticamente un
+pannello custom chiamato **Clima Casa** nella sidebar. Non è una plancia
+Lovelace: è una pagina propria dell'integrazione, pensata come interfaccia
+principale per la climatizzazione della casa.
+
+La pagina contiene:
 
 - selettore modalità casa;
 - termostati virtuali `climate.urt_*`;
 - diagnostica canalizzato;
 - richieste freddo delle camere canalizzate.
 
-La dashboard è generata dall'integrazione, quindi non serve crearla a mano.
+La pagina è generata dall'integrazione, quindi non serve crearla a mano.
 Per nasconderla dalla sidebar mantenendo l'integrazione attiva:
 
 ```yaml
@@ -131,7 +134,7 @@ universal_room_thermostat:
     show_in_sidebar: false
 ```
 
-Per disattivare del tutto la creazione della dashboard:
+Per disattivare del tutto la pagina sidebar:
 
 ```yaml
 universal_room_thermostat:
