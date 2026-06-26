@@ -8,7 +8,6 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
@@ -58,7 +57,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> dict[str, Any]:
         """Configure global, ducted and sidebar settings."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
@@ -120,7 +119,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_bedrooms(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> dict[str, Any]:
         """Configure the three ducted bedrooms."""
         if user_input is not None:
             for room_key in ("camera_fra", "camera_ale", "camera_padronale"):
@@ -172,7 +171,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_living_services(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> dict[str, Any]:
         """Configure living room, kitchen and bathrooms."""
         if user_input is not None:
             _set(
@@ -284,7 +283,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_import(
         self, import_config: dict[str, Any]
-    ) -> FlowResult:
+    ) -> dict[str, Any]:
         """Import YAML configuration into a config entry."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
@@ -292,67 +291,4 @@ class UniversalRoomThermostatConfigFlow(
         return self.async_create_entry(
             title=_get(imported, "dashboard.title", "Clima Casa"),
             data=imported,
-        )
-
-    @staticmethod
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> config_entries.OptionsFlow:
-        """Return the options flow."""
-        return UniversalRoomThermostatOptionsFlow(config_entry)
-
-
-class UniversalRoomThermostatOptionsFlow(config_entries.OptionsFlow):
-    """Simple options flow for sidebar and comfort targets."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self._config_entry = config_entry
-
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Configure commonly changed options."""
-        current = deepcopy(dict(self._config_entry.options or self._config_entry.data))
-        if user_input is not None:
-            _set(current, "global.mode_entity", user_input["mode_entity"])
-            _set(
-                current,
-                "global.comfort_cooling_target",
-                float(user_input["comfort_cooling_target"]),
-            )
-            _set(
-                current,
-                "global.maintenance_cooling_target",
-                float(user_input["maintenance_cooling_target"]),
-            )
-            _set(current, "dashboard.title", user_input["panel_title"])
-            _set(current, "dashboard.show_in_sidebar", user_input["show_in_sidebar"])
-            return self.async_create_entry(title="", data=current)
-
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        "mode_entity",
-                        default=_get(current, "global.mode_entity"),
-                    ): cv.entity_id,
-                    vol.Required(
-                        "comfort_cooling_target",
-                        default=_get(current, "global.comfort_cooling_target"),
-                    ): vol.Coerce(float),
-                    vol.Required(
-                        "maintenance_cooling_target",
-                        default=_get(current, "global.maintenance_cooling_target"),
-                    ): vol.Coerce(float),
-                    vol.Required(
-                        "panel_title",
-                        default=_get(current, "dashboard.title"),
-                    ): str,
-                    vol.Required(
-                        "show_in_sidebar",
-                        default=_get(current, "dashboard.show_in_sidebar", True),
-                    ): cv.boolean,
-                }
-            ),
         )
