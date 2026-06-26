@@ -95,16 +95,19 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "temperature_sensor": "sensor.cucina_temperatura",
             "humidity_sensor": "sensor.cucina_umidita",
             "heat_climate": "climate.valvola_cucina",
+            "cooling_type": "none",
         },
         "bagno": {
             "name": "Bagno",
             "temperature_sensor": "sensor.valvola_bagno_local_temperature",
             "heat_climate": "climate.valvola_bagno",
+            "cooling_type": "none",
         },
         "bagnetto": {
             "name": "Bagnetto",
             "temperature_sensor": "sensor.bagnetto_temperatura",
             "heat_climate": "climate.valvola_bagnetto",
+            "cooling_type": "none",
         },
     },
 }

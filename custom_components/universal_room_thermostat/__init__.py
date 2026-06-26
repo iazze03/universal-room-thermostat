@@ -163,7 +163,7 @@ def _room_from_config(key: str, config: dict[str, Any]) -> RoomConfig:
     heat = list(config.get("heat_climates", []))
     if entity_id := config.get("heat_climate"):
         heat.insert(0, entity_id)
-    cooling_type = config["cooling_type"]
+    cooling_type = config.get("cooling_type", COOLING_NONE)
     if cooling_type != COOLING_NONE and not (
         cooling_type in ("ducted", "hybrid", "split")
     ):
