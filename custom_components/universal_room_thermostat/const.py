@@ -8,6 +8,7 @@ PLATFORMS = ("climate", "sensor", "binary_sensor")
 CONF_GLOBAL = "global"
 CONF_DUCTED_AC = "ducted_ac"
 CONF_ROOMS = "rooms"
+CONF_DASHBOARD = "dashboard"
 
 HOUSE_MODE_SUMMER = "estate"
 HOUSE_MODE_WINTER = "inverno"

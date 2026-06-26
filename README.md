@@ -46,6 +46,14 @@ universal_room_thermostat:
     salon_boost_delta: 2
     split_heat_enabled: false
 
+  dashboard:
+    enabled: true
+    title: Clima Casa
+    icon: mdi:thermostat
+    url_path: urt-clima-casa
+    show_in_sidebar: true
+    require_admin: false
+
   rooms:
     camera_fra:
       name: Camera Fra
@@ -101,6 +109,34 @@ universal_room_thermostat:
       name: Bagnetto
       temperature_sensor: sensor.bagnetto_temperatura
       heat_climate: climate.valvola_bagnetto
+```
+
+## Dashboard sidebar
+
+Quando Home Assistant carica l'integrazione, URT crea o aggiorna
+automaticamente una dashboard Lovelace chiamata **Clima Casa** e la registra
+nella sidebar. La pagina contiene:
+
+- selettore modalità casa;
+- termostati virtuali `climate.urt_*`;
+- diagnostica canalizzato;
+- richieste freddo delle camere canalizzate.
+
+La dashboard è generata dall'integrazione, quindi non serve crearla a mano.
+Per nasconderla dalla sidebar mantenendo l'integrazione attiva:
+
+```yaml
+universal_room_thermostat:
+  dashboard:
+    show_in_sidebar: false
+```
+
+Per disattivare del tutto la creazione della dashboard:
+
+```yaml
+universal_room_thermostat:
+  dashboard:
+    enabled: false
 ```
 
 ## Comportamento
