@@ -65,9 +65,12 @@ class URTCoordinator(DataUpdateCoordinator[ControllerSnapshot]):
     def house_mode(self) -> str:
         """Return a sanitized whole-house mode."""
         state = self.hass.states.get(self.mode_entity)
-        if state is None or state.state not in HOUSE_MODES:
+        if state is None:
             return HOUSE_MODE_AUTO
-        return state.state
+        mode = state.state.lower()
+        if mode not in HOUSE_MODES:
+            return HOUSE_MODE_AUTO
+        return mode
 
     async def async_start(self) -> None:
         """Subscribe to all relevant entities and take an initial snapshot."""

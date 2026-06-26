@@ -60,7 +60,8 @@ class URTClimatePanel extends HTMLElement {
   _renderModeSelector() {
     const modeEntity = this._config.mode_entity;
     const mode = this._formatState(modeEntity, "—");
-    const modes = ["estate", "inverno", "spento", "auto"];
+    const modeState = this._state(modeEntity);
+    const modes = modeState?.attributes?.options || ["estate", "inverno", "spento", "auto"];
     return `
       <section class="hero">
         <div>
@@ -75,7 +76,7 @@ class URTClimatePanel extends HTMLElement {
             ${modes
               .map(
                 (item) => `
-                  <button class="${item === mode ? "active" : ""}" data-action="house-mode" data-entity="${this._escape(modeEntity)}" data-value="${item}">
+                  <button class="${item === mode ? "active" : ""}" data-action="house-mode" data-entity="${this._escape(modeEntity)}" data-value="${this._escape(item)}">
                     ${this._escape(item)}
                   </button>`
               )
