@@ -274,33 +274,21 @@ async def _async_setup_sidebar_panel(
 
     panel_dir = Path(__file__).parent / "frontend"
     panel_url = f"/{DOMAIN}/urt-panel.js"
-    await hass.http.async_register_static_paths(
-        [
-            StaticPathConfig(
-                panel_url,
-                str(panel_dir / "urt-panel.js"),
-                cache_headers=False,
-            )
-        ]
-    )
+    try:
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    panel_url,
+                    str(panel_dir / "urt-panel.js"),
+                    cache_headers=False,
+                )
+            ]
+        )
+    except RuntimeError as err:
+        # The path may already be registered after a config-entry reload.
+        _LOGGER.debug("URT panel static path already registered: %s", err)
 
     try:
-        await _maybe_await(
-            panel_custom.async_register_panel(
-                hass,
-                frontend_url_path=url_path,
-                webcomponent_name="urt-climate-panel",
-                sidebar_title=title,
-                sidebar_icon=icon,
-                module_url=panel_url,
-                config=_panel_config(rooms, global_config, sidebar_config),
-                require_admin=require_admin,
-                update=True,
-                show_in_sidebar=show_in_sidebar,
-            )
-        )
-    except TypeError:
-        # Older Home Assistant versions do not accept update/show_in_sidebar.
         await _maybe_await(
             panel_custom.async_register_panel(
                 hass,
