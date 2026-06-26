@@ -8,7 +8,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
+from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
@@ -58,7 +58,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    ) -> FlowResult:
         """Configure global, ducted and sidebar settings."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
@@ -120,7 +120,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_bedrooms(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    ) -> FlowResult:
         """Configure the three ducted bedrooms."""
         if user_input is not None:
             for room_key in ("camera_fra", "camera_ale", "camera_padronale"):
@@ -172,7 +172,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_living_services(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    ) -> FlowResult:
         """Configure living room, kitchen and bathrooms."""
         if user_input is not None:
             _set(
@@ -284,7 +284,7 @@ class UniversalRoomThermostatConfigFlow(
 
     async def async_step_import(
         self, import_config: dict[str, Any]
-    ) -> config_entries.ConfigFlowResult:
+    ) -> FlowResult:
         """Import YAML configuration into a config entry."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
@@ -310,7 +310,7 @@ class UniversalRoomThermostatOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
+    ) -> FlowResult:
         """Configure commonly changed options."""
         current = deepcopy(dict(self._config_entry.options or self._config_entry.data))
         if user_input is not None:
@@ -352,7 +352,7 @@ class UniversalRoomThermostatOptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         "show_in_sidebar",
                         default=_get(current, "dashboard.show_in_sidebar", True),
-                    ): bool,
+                    ): cv.boolean,
                 }
             ),
         )
