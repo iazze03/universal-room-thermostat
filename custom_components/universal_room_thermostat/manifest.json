@@ -2,10 +2,10 @@
   "domain": "universal_room_thermostat",
   "name": "Universal Room Thermostat",
   "codeowners": [],
-  "config_flow": false,
+  "config_flow": true,
   "documentation": "https://github.com/example/universal-room-thermostat",
   "integration_type": "hub",
   "iot_class": "calculated",
   "requirements": [],
-  "version": "1.0.3"
+  "version": "1.1.0"
 }

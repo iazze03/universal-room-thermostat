@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -52,6 +53,15 @@ async def async_setup_platform(
             ),
         ]
     )
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up URT diagnostic sensors from a config entry."""
+    await async_setup_platform(hass, {}, async_add_entities)
 
 
 class URTDiagnosticSensor(CoordinatorEntity[URTCoordinator], SensorEntity):

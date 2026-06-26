@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -29,6 +30,15 @@ async def async_setup_platform(
         if room.cooling_type == COOLING_DUCTED
     )
     async_add_entities(entities)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up URT binary sensors from a config entry."""
+    await async_setup_platform(hass, {}, async_add_entities)
 
 
 class URTDuctedRequestSensor(CoordinatorEntity[URTCoordinator], BinarySensorEntity):

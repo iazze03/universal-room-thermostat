@@ -1,3 +1,45 @@
 {
-  "title": "Universal Room Thermostat"
+  "title": "Universal Room Thermostat",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Clima casa",
+        "description": "Imposta la regia generale, il canalizzato e la pagina laterale.",
+        "data": {
+          "mode_entity": "Helper modalità clima casa",
+          "comfort_cooling_target": "Target comfort raffrescamento",
+          "maintenance_cooling_target": "Target mantenimento raffrescamento",
+          "ducted_climate_entity": "Canalizzato Daikin",
+          "panel_title": "Titolo pagina sidebar",
+          "panel_url_path": "Percorso pagina sidebar"
+        }
+      },
+      "bedrooms": {
+        "title": "Camere canalizzate",
+        "description": "Configura interfacce Aqara, sensori, valvole e presenza per Camera Fra, Camera Ale e Camera Padronale."
+      },
+      "living_services": {
+        "title": "Salone, cucina e bagni",
+        "description": "Configura salone hybrid, split dedicato, cucina e bagni."
+      }
+    },
+    "abort": {
+      "already_configured": "Universal Room Thermostat è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Clima Casa",
+        "description": "Modifica le impostazioni più comuni.",
+        "data": {
+          "mode_entity": "Helper modalità clima casa",
+          "comfort_cooling_target": "Target comfort raffrescamento",
+          "maintenance_cooling_target": "Target mantenimento raffrescamento",
+          "panel_title": "Titolo pagina sidebar",
+          "show_in_sidebar": "Mostra in sidebar"
+        }
+      }
+    }
+  }
 }

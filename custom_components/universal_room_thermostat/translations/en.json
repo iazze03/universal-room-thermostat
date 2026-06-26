@@ -1,3 +1,45 @@
 {
-  "title": "Universal Room Thermostat"
+  "title": "Universal Room Thermostat",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Home climate",
+        "description": "Configure the global mode, ducted AC and sidebar panel.",
+        "data": {
+          "mode_entity": "Home climate mode helper",
+          "comfort_cooling_target": "Comfort cooling target",
+          "maintenance_cooling_target": "Maintenance cooling target",
+          "ducted_climate_entity": "Ducted Daikin climate",
+          "panel_title": "Sidebar panel title",
+          "panel_url_path": "Sidebar panel path"
+        }
+      },
+      "bedrooms": {
+        "title": "Ducted bedrooms",
+        "description": "Configure Aqara interfaces, sensors, radiator valves and presence for the three bedrooms."
+      },
+      "living_services": {
+        "title": "Living room, kitchen and bathrooms",
+        "description": "Configure the hybrid living room, dedicated split, kitchen and bathrooms."
+      }
+    },
+    "abort": {
+      "already_configured": "Universal Room Thermostat is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Home Climate Options",
+        "description": "Change common settings.",
+        "data": {
+          "mode_entity": "Home climate mode helper",
+          "comfort_cooling_target": "Comfort cooling target",
+          "maintenance_cooling_target": "Maintenance cooling target",
+          "panel_title": "Sidebar panel title",
+          "show_in_sidebar": "Show in sidebar"
+        }
+      }
+    }
+  }
 }

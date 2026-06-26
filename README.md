@@ -1,18 +1,37 @@
 # Universal Room Thermostat (URT)
 
-Custom integration YAML per Home Assistant che espone un solo termostato
+Custom integration per Home Assistant che espone un solo termostato
 virtuale per stanza e orchestra valvole, canalizzato condiviso e split del
 salone. Gli attuatori fisici possono essere nascosti dalle dashboard: tutte le
 impostazioni utente passano dalle entità `climate.urt_*`.
 
 ## Installazione
 
-1. Copiare `custom_components/universal_room_thermostat` nella directory
-   `custom_components` della configurazione Home Assistant.
-2. Inserire la configurazione seguente in `configuration.yaml`.
-3. Eseguire **Controlla configurazione** e riavviare Home Assistant.
+1. Installare l'integrazione via HACS o copiando
+   `custom_components/universal_room_thermostat` in `custom_components`.
+2. Riavviare Home Assistant.
+3. Andare in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione**.
+4. Cercare **Universal Room Thermostat**.
+5. Confermare la configurazione guidata precompilata per questa abitazione.
 
-## Configurazione per questa abitazione
+Da `1.1.0` non serve più inserire YAML in `configuration.yaml`.
+
+## Configurazione da interfaccia
+
+La configurazione guidata crea automaticamente:
+
+- regia globale casa;
+- camere canalizzate;
+- salone hybrid con split dedicato;
+- cucina, bagno e bagnetto;
+- pagina custom **Clima Casa** nella sidebar.
+
+I campi sono già precompilati con gli entity_id di questa abitazione.
+
+## Configurazione YAML opzionale
+
+Il YAML resta supportato solo come compatibilità/migrazione. Se presente, Home
+Assistant lo importa automaticamente in una configurazione da interfaccia.
 
 ```yaml
 universal_room_thermostat:

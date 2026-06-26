@@ -10,6 +10,7 @@ from homeassistant.components.climate.const import (
     HVACAction,
     HVACMode,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -28,6 +29,18 @@ async def async_setup_platform(
     discovery_info: dict[str, Any] | None = None,
 ) -> None:
     """Set up one virtual climate per configured room."""
+    coordinator: URTCoordinator = hass.data[DOMAIN]
+    async_add_entities(
+        URTRoomClimate(coordinator, room) for room in coordinator.rooms.values()
+    )
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up URT climate entities from a config entry."""
     coordinator: URTCoordinator = hass.data[DOMAIN]
     async_add_entities(
         URTRoomClimate(coordinator, room) for room in coordinator.rooms.values()

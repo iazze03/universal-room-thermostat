@@ -11,9 +11,10 @@ import voluptuous as vol
 
 from homeassistant.components import panel_custom
 from homeassistant.components.http import StaticPathConfig
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv, discovery
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 
 from .const import (
@@ -27,6 +28,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import URTCoordinator
+from .defaults import default_config
 from .models import RoomConfig
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,6 +141,22 @@ CONFIG_SCHEMA = vol.Schema(
     },
     extra=vol.ALLOW_EXTRA,
 )
+
+
+def _merged_config(config: dict[str, Any]) -> dict[str, Any]:
+    """Merge a partial config-entry/options payload over the URT defaults."""
+    merged = default_config()
+    for section, value in config.items():
+        if isinstance(value, dict) and isinstance(merged.get(section), dict):
+            if section == CONF_ROOMS:
+                for room_key, room_config in value.items():
+                    merged[section].setdefault(room_key, {})
+                    merged[section][room_key].update(room_config)
+            else:
+                merged[section].update(value)
+        else:
+            merged[section] = value
+    return merged
 
 
 def _room_from_config(key: str, config: dict[str, Any]) -> RoomConfig:
@@ -300,10 +318,25 @@ async def _async_setup_sidebar_panel(
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
-    """Set up URT from YAML."""
+    """Set up URT and import YAML when present."""
     if DOMAIN not in config:
         return True
-    domain_config = config[DOMAIN]
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": "import"},
+            data=config[DOMAIN],
+        )
+    )
+    return True
+
+
+async def _async_setup_from_config(
+    hass: HomeAssistant,
+    domain_config: dict[str, Any],
+) -> bool:
+    """Set up URT from a normalized domain config."""
+    domain_config = _merged_config(domain_config)
     rooms = {
         key: _room_from_config(key, room_config)
         for key, room_config in domain_config[CONF_ROOMS].items()
@@ -331,8 +364,32 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         domain_config[CONF_GLOBAL],
         domain_config[CONF_DASHBOARD],
     )
-    for platform in PLATFORMS:
-        hass.async_create_task(
-            discovery.async_load_platform(hass, platform, DOMAIN, {}, config)
-        )
     return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up URT from the UI config entry."""
+    domain_config = dict(entry.options or entry.data)
+    if not await _async_setup_from_config(hass, domain_config):
+        return False
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a UI-configured URT entry."""
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        coordinator = hass.data.pop(DOMAIN, None)
+        if coordinator and getattr(coordinator, "_remove_listener", None):
+            coordinator._remove_listener()
+    return unloaded
+
+
+async def _async_update_listener(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
+    """Reload URT when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
