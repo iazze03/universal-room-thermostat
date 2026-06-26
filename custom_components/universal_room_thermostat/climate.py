@@ -121,6 +121,7 @@ class URTRoomClimate(
             "priority": self.runtime.priority,
             "priority_reason": self.runtime.priority_reason,
             "house_mode": self.coordinator.house_mode,
+            "urt_control_enabled": self.coordinator.control_enabled,
         }
 
     async def async_added_to_hass(self) -> None:

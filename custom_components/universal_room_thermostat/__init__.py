@@ -69,6 +69,7 @@ ROOM_SCHEMA = vol.Schema(
 GLOBAL_SCHEMA = vol.Schema(
     {
         vol.Required("mode_entity"): cv.entity_id,
+        vol.Optional("control_enabled_entity"): cv.entity_id,
         vol.Optional("comfort_cooling_target", default=25.0): vol.Coerce(float),
         vol.Optional("maintenance_cooling_target", default=28.0): vol.Coerce(float),
         vol.Optional("cooling_tolerance", default=0.3): vol.All(
@@ -202,6 +203,7 @@ def _panel_config(
     return {
         "title": sidebar_config["title"],
         "mode_entity": global_config["mode_entity"],
+        "control_enabled_entity": global_config.get("control_enabled_entity"),
         "rooms": [
             {
                 "key": room_key,

@@ -69,6 +69,20 @@ class DuctedACController:
         async with self._lock:
             coordinator = self.coordinator
             house_mode = coordinator.house_mode
+            if not coordinator.control_enabled:
+                decision = CoolingDecision()
+                for runtime in coordinator.runtime.values():
+                    runtime.cooling_request = False
+                    runtime.hvac_action = "off"
+                coordinator.publish_snapshot(
+                    self._snapshot(
+                        house_mode,
+                        decision,
+                        extra={"control_enabled": False},
+                    )
+                )
+                return
+
             cooling_allowed = house_mode in (HOUSE_MODE_SUMMER, HOUSE_MODE_AUTO)
 
             requests = []
@@ -108,7 +122,9 @@ class DuctedACController:
             await self._async_reconcile_heat(heat_allowed)
             await self._async_reconcile_cooling(decision, cooling_allowed)
             self._update_actions(decision, heat_allowed)
-            coordinator.publish_snapshot(self._snapshot(house_mode, decision))
+            coordinator.publish_snapshot(
+                self._snapshot(house_mode, decision, extra={"control_enabled": True})
+            )
 
     async def _async_reconcile_heat(self, heat_allowed: bool) -> None:
         """Propagate virtual targets to all configured radiator climates."""
@@ -329,7 +345,21 @@ class DuctedACController:
             for room in self.coordinator.rooms.values()
         )
 
-    def _snapshot(self, house_mode: str, decision: CoolingDecision) -> ControllerSnapshot:
+    def _snapshot(
+        self,
+        house_mode: str,
+        decision: CoolingDecision,
+        *,
+        extra: dict[str, Any] | None = None,
+    ) -> ControllerSnapshot:
+        snapshot_extra = {
+            "request_order": [request.room_key for request in decision.requests],
+            "priorities": {
+                request.room_key: request.priority for request in decision.requests
+            },
+        }
+        if extra:
+            snapshot_extra.update(extra)
         return ControllerSnapshot(
             house_mode=house_mode,
             active_room=decision.guide_room,
@@ -340,10 +370,5 @@ class DuctedACController:
                 key: runtime.cooling_request
                 for key, runtime in self.coordinator.runtime.items()
             },
-            extra={
-                "request_order": [request.room_key for request in decision.requests],
-                "priorities": {
-                    request.room_key: request.priority for request in decision.requests
-                },
-            },
+            extra=snapshot_extra,
         )

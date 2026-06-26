@@ -41,6 +41,9 @@ class URTCoordinator(DataUpdateCoordinator[ControllerSnapshot]):
         self.runtime = {key: RoomRuntime() for key in rooms}
         self.global_config = global_config
         self.mode_entity: str = global_config["mode_entity"]
+        self.control_enabled_entity: str | None = global_config.get(
+            "control_enabled_entity"
+        )
         self.maintenance_cooling_target = float(
             global_config["maintenance_cooling_target"]
         )
@@ -72,9 +75,21 @@ class URTCoordinator(DataUpdateCoordinator[ControllerSnapshot]):
             return HOUSE_MODE_AUTO
         return mode
 
+    @property
+    def control_enabled(self) -> bool:
+        """Return whether URT may actively command physical equipment."""
+        if not self.control_enabled_entity:
+            return True
+        state = self.hass.states.get(self.control_enabled_entity)
+        if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return True
+        return state.state == STATE_ON
+
     async def async_start(self) -> None:
         """Subscribe to all relevant entities and take an initial snapshot."""
         entity_ids = {self.mode_entity, self.ducted_entity}
+        if self.control_enabled_entity:
+            entity_ids.add(self.control_enabled_entity)
         for room in self.rooms.values():
             entity_ids.update(room.heat_climates)
             entity_ids.update(

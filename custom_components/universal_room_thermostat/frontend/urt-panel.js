@@ -59,9 +59,12 @@ class URTClimatePanel extends HTMLElement {
 
   _renderModeSelector() {
     const modeEntity = this._config.mode_entity;
+    const controlEntity = this._config.control_enabled_entity;
     const mode = this._formatState(modeEntity, "—");
     const modeState = this._state(modeEntity);
     const modes = modeState?.attributes?.options || ["estate", "inverno", "spento", "auto"];
+    const controlState = this._state(controlEntity);
+    const controlEnabled = !controlEntity || !controlState || controlState.state === "on";
     return `
       <section class="hero">
         <div>
@@ -69,9 +72,18 @@ class URTClimatePanel extends HTMLElement {
           <h1>${this._escape(this._config.title || "Clima Casa")}</h1>
           <p class="subtitle">Una regia unica per valvole, canalizzato e split.</p>
         </div>
-        <div class="mode-card">
+        <div class="mode-card ${controlEnabled ? "" : "disabled"}">
+          <span>Controllo integrazione</span>
+          <strong>${controlEnabled ? "Attivo" : "Disattivato"}</strong>
+          ${
+            controlEntity
+              ? `<button class="master ${controlEnabled ? "active" : ""}" data-action="master-control" data-entity="${this._escape(controlEntity)}" data-value="${controlEnabled ? "off" : "on"}">
+                  ${controlEnabled ? "Disattiva controllo clima" : "Riattiva controllo clima"}
+                </button>`
+              : `<p class="missing-helper">Helper controllo non configurato</p>`
+          }
           <span>Modalità casa</span>
-          <strong>${this._escape(mode)}</strong>
+          <strong class="mode-value">${this._escape(mode)}</strong>
           <div class="mode-buttons">
             ${modes
               .map(
@@ -254,6 +266,26 @@ class URTClimatePanel extends HTMLElement {
           font-size: 34px;
           text-transform: capitalize;
         }
+        .mode-card.disabled {
+          border-color: var(--error-color);
+        }
+        .mode-card .master {
+          width: 100%;
+          background: var(--error-color);
+          color: var(--text-primary-color);
+          padding: 14px 18px;
+        }
+        .mode-card .master.active {
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+        }
+        .mode-card .mode-value {
+          font-size: 24px;
+        }
+        .missing-helper {
+          margin: 0;
+          color: var(--error-color);
+        }
         .mode-buttons,
         .chips {
           display: flex;
@@ -391,6 +423,12 @@ class URTClimatePanel extends HTMLElement {
       this._hass.callService("input_select", "select_option", {
         entity_id: entityId,
         option: value,
+      });
+      return;
+    }
+    if (button.dataset.action === "master-control") {
+      this._hass.callService("input_boolean", button.dataset.value === "on" ? "turn_on" : "turn_off", {
+        entity_id: entityId,
       });
       return;
     }

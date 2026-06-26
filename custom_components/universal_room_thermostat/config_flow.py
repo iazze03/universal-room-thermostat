@@ -104,6 +104,11 @@ class OptionsFlow(config_entries.OptionsFlow):
         """Edit common URT entities."""
         config = dict(self._config_entry.options or self._config_entry.data)
         if user_input is not None:
+            _set(
+                config,
+                "global.control_enabled_entity",
+                user_input["control_enabled_entity"],
+            )
             _set(config, "global.mode_entity", user_input["mode_entity"])
             _set(config, "ducted_ac.climate_entity", user_input["ducted_climate"])
             _set(config, "rooms.salone.split_climate", user_input["salone_split"])
@@ -122,6 +127,10 @@ class OptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        "control_enabled_entity",
+                        default=_get(config, "global.control_enabled_entity"),
+                    ): cv.entity_id,
                     vol.Required("mode_entity", default=_get(config, "global.mode_entity")): cv.entity_id,
                     vol.Required("ducted_climate", default=_get(config, "ducted_ac.climate_entity")): cv.entity_id,
                     vol.Required("salone_split", default=_get(config, "rooms.salone.split_climate")): cv.entity_id,

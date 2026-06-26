@@ -7,6 +7,7 @@ from typing import Any
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "global": {
+        "control_enabled_entity": "input_boolean.urt_controllo_clima_attivo",
         "mode_entity": "input_select.modalita_clima_casa",
         "comfort_cooling_target": 25.0,
         "maintenance_cooling_target": 28.0,
